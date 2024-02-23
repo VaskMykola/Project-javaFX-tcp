@@ -1,5 +1,7 @@
 package com.example.project;
 
+import java.io.*;
+import java.net.*;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -7,24 +9,54 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-// ##################################################
-// ##########----Server Section----##################
-// ##################################################
-public class Server {
+// TODO
+// 1. multi thread exit (or patitial exit for all threads)
+// 2. add client part (sending receiving processing data)
+// 3. something else?
 
+public class Server {
+    boolean isRunning = true;
+    private ServerSocket serverSocket;
     private final HashMap<String, HashMap<String, HashSet<ModuleSchedule>>> classSchedules = new HashMap<>();
     private final HashMap<String, Set<ModuleInfo>> moduleIndex = new HashMap<>();
 
     public static void main(String[] args) {
-//        Server server = new Server();
-//
-//        server.addClass("LM051-2022", new ModuleSchedule("CS1111", "Monday", "09:00", "Room 101"));
-//        server.displayScheduleForDay("LM051-2022", "Monday");
-//        server.displayScheduleForModule("CS1111");
-//        server.removeClass("LM051-2022", "CS1111");
-
-        MenuBuilder.displayMenu();
+        new Server().startServer();
     }
+
+    public void startServer() {
+        try {
+            serverSocket = new ServerSocket(1234); // Initialize serverSocket without try-with-resources
+            new Thread(MenuBuilder::displayMenu).start();
+
+            while (isRunning) {
+                Socket clientSocket = serverSocket.accept();
+                new ClientHandler(clientSocket, this).start();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (serverSocket != null && !serverSocket.isClosed()) {
+                    serverSocket.close();
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void stopServer() {
+        isRunning = false;
+        try {
+            if (serverSocket != null) {
+                serverSocket.close(); // This will break the server loop by throwing a SocketException
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 
     public HashMap<String, HashMap<String, HashSet<ModuleSchedule>>> getClassSchedules() {
         return classSchedules;
@@ -141,12 +173,39 @@ public class Server {
 
         displayScheduleForModule(moduleName);
     }
+
+    private static class ClientHandler extends Thread {
+        private Socket clientSocket;
+        private Server server;
+
+        public ClientHandler(Socket socket, Server server) {
+            this.clientSocket = socket;
+            this.server = server;
+        }
+
+        @Override
+        public void run() {
+            try (
+                    BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                    PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
+            ) {
+                String inputLine;
+                while ((inputLine = in.readLine()) != null) {
+                    // TODO PASTE CODE FOR processing client requests HERE
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                try {
+                    clientSocket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
 }
 
-
-// ##################################################
-// ##########----Module Section----##################
-// ##################################################
 class ModuleSchedule {
     private final String moduleName;
     private final String day;
@@ -174,19 +233,6 @@ class ModuleSchedule {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        ModuleSchedule that = (ModuleSchedule) o;
-
-        if (!moduleName.equals(that.moduleName)) return false;
-        if (!day.equals(that.day)) return false;
-        if (!time.equals(that.time)) return false;
-        return room.equals(that.room);
-    }
-
-    @Override
     public int hashCode() {
         int result = moduleName.hashCode();
         result = 31 * result + day.hashCode();
@@ -194,29 +240,27 @@ class ModuleSchedule {
         result = 31 * result + room.hashCode();
         return result;
     }
-}
-
-record ModuleInfo(String classId, String day) {
 
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-
-        ModuleInfo that = (ModuleInfo) o;
-
-        if (!classId.equals(that.classId)) return false;
-        return day.equals(that.day);
+        ModuleSchedule that = (ModuleSchedule) o;
+        return moduleName.equals(that.moduleName) && day.equals(that.day) && time.equals(that.time) && room.equals(that.room);
     }
-
 }
 
+record ModuleInfo(String classId, String day) {
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        ModuleInfo that = (ModuleInfo) o;
+        return classId.equals(that.classId) && day.equals(that.day);
+    }
+}
 
-// ##################################################
-// ##########----MENU SECTION----####################
-// ##################################################
 class Menu {
-
     List<MenuItem> items = new ArrayList<>();
     String title;
 
@@ -236,21 +280,18 @@ class Menu {
                 System.out.println((i + 1) + ". " + items.get(i).label);
             }
             System.out.println("0. Exit");
-
             System.out.print("Choose an option: ");
             boolean validInput = false;
             int choice = -1;
-
             while (!validInput) {
                 try {
                     String userInput = scanner.nextLine();
                     choice = Integer.parseInt(userInput);
-                    validInput = true; // Input is successfully parsed, exit the loop
+                    validInput = true;
                 } catch (NumberFormatException ex) {
                     System.out.println("Invalid input: an integer is required. Try again.");
                 }
             }
-
             if (choice == 0) {
                 break;
             } else if (choice > 0 && choice <= items.size()) {
@@ -265,12 +306,9 @@ class Menu {
             }
         }
     }
-
 }
 
-
 class MenuItem {
-
     String label;
     Runnable func_to_run;
     Menu subMenu;
@@ -286,31 +324,36 @@ class MenuItem {
     }
 }
 
-
 class MenuBuilder {
     private static final Server server = new Server();
+
     public static void buildMenu() {
         Menu serverMenu = new Menu("Server Menu");
-
         serverMenu.addItem(new MenuItem("Show All Classes", server::displayAllClasses));
         serverMenu.addItem(new MenuItem("Add Class", server::addClassFromMenu));
         serverMenu.addItem(new MenuItem("Remove Class", server::removeClassFromMenu));
         serverMenu.addItem(new MenuItem("Display Schedule for Day", server::displayScheduleForDayFromMenu));
         serverMenu.addItem(new MenuItem("Display Schedule for Module", server::displayScheduleForModuleFromMenu));
         serverMenu.addItem(new MenuItem("Show Modules for a Class", MenuBuilder::buildClassesSubMenu));
-
-
         serverMenu.display();
     }
 
     private static void buildClassesSubMenu() {
         Menu classesMenu = new Menu("Select a Class");
-        server.getClassSchedules().keySet().forEach(classId -> {
-            classesMenu.addItem(new MenuItem(classId, () -> server.displayModulesForClass(classId)));
-        });
+        server.getClassSchedules().keySet()
+                .forEach(classId -> classesMenu
+                        .addItem(new MenuItem(classId, () ->
+                                server.displayModulesForClass(classId))));
         classesMenu.display();
     }
+
+    private void showExitConfirmation() { // TODO 1
+        Menu exitMenu = new Menu("You are trying to quit the app completely. Are you sure?");
+        exitMenu.addItem(new MenuItem("Yes", server::stopServer));
+    }
+
+
     public static void displayMenu() {
-        MenuBuilder.buildMenu();
+        buildMenu();
     }
 }
