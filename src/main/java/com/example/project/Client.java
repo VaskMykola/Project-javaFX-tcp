@@ -1,72 +1,107 @@
 package com.example.project;
 
 import javafx.application.Application;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
-import javafx.scene.layout.VBox;
+import javafx.scene.control.*;
+import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 
 public class Client extends Application {
 
-    private Label outputLabel; // Label to display text that changes
+    private TextArea responseArea; // For displaying server responses
+    private TextField dateField, timeField, roomField, classField; // Class details input
 
     @Override
     public void start(Stage primaryStage) {
-        // Text Field for user input
-        TextField userInputField = new TextField();
+        // Action selection
+        ComboBox<String> actionComboBox = new ComboBox<>();
+        actionComboBox.getItems().addAll("Add Class", "Remove Class", "Display Schedule");
 
-        // Buttons with their respective actions
-        Button sendButton = new Button("Send");
-        sendButton.setOnAction(e -> SendButtonCall());
+        // Initialize class details input fields
+        dateField = new TextField();
+        dateField.setPromptText("Date (dd/MM/yyyy)");
 
-        Button startButton = new Button("Start");
-        startButton.setOnAction(e -> StartButtonCall());
+        timeField = new TextField();
+        timeField.setPromptText("Time (HH:mm)");
 
-        Button stopButton = new Button("Stop");
-        stopButton.setOnAction(e -> StopButtonCall());
+        roomField = new TextField();
+        roomField.setPromptText("Room Number");
 
-        // Label for program testing
-        Label testingLabel = new Label("program testing");
+        classField = new TextField();
+        classField.setPromptText("Class Name");
 
-        // Label for output
-        outputLabel = new Label("Output will appear here...");
+        // Listener to handle action selection changes
+        actionComboBox.valueProperty().addListener(new ChangeListener<String>() {
+            @Override
+            public void changed(ObservableValue<? extends String> observable, String oldValue, String newValue) {
+                updateFieldVisibility(newValue);
+            }
+        });
+
+        // Send Request Button
+        Button sendButton = new Button("Send Request");
+        sendButton.setOnAction(e -> {
+            String response = simulateServerResponse(actionComboBox.getValue(), classField.getText());
+            responseArea.setText(response);
+        });
+
+        // Response Display
+        responseArea = new TextArea();
+        responseArea.setEditable(false);
 
         // Layout
-        VBox layout = new VBox(10);
-        layout.setPadding(new Insets(20, 20, 20, 20));
-        layout.getChildren().addAll(testingLabel, userInputField, sendButton, startButton, stopButton, outputLabel);
-        layout.setAlignment(Pos.CENTER);
+        GridPane grid = new GridPane();
+        grid.setPadding(new Insets(10, 10, 10, 10));
+        grid.setVgap(8);
+        grid.setHgap(10);
+        grid.setAlignment(Pos.CENTER);
 
-        // Scene
-        Scene scene = new Scene(layout, 300, 300);
+        grid.add(actionComboBox, 0, 0);
+        grid.add(dateField, 0, 1);
+        grid.add(timeField, 0, 2);
+        grid.add(roomField, 0, 3);
+        grid.add(classField, 0, 4);
+        grid.add(sendButton, 0, 5);
+        grid.add(responseArea, 0, 6);
 
-        // Stage
-        primaryStage.setTitle("Test");
+        // Scene and Stage
+        Scene scene = new Scene(grid, 400, 400);
+        primaryStage.setTitle("Class Scheduler Client");
         primaryStage.setScene(scene);
         primaryStage.show();
     }
 
-    private void SendButtonCall() {
-        System.out.println("Send Button Pressed");
-        // Implement the desired functionality here
+    private void updateFieldVisibility(String action) {
+        boolean isScheduleAction = "Display Schedule".equals(action);
+
+        // Date, Time, and Room fields are not needed for Display Schedule action
+        dateField.setVisible(!isScheduleAction);
+        dateField.setDisable(isScheduleAction);
+
+        timeField.setVisible(!isScheduleAction);
+        timeField.setDisable(isScheduleAction);
+
+        roomField.setVisible(!isScheduleAction);
+        roomField.setDisable(isScheduleAction);
+
+        // Class Name field is always visible but enabled for all actions
+        classField.setDisable(false);
     }
 
-    private void StartButtonCall() {
-        System.out.println("Start Button Pressed");
-        // Implement the desired functionality here
-    }
-
-    private void StopButtonCall() {
-        System.out.println("Stop Button Pressed");
-        // Implement the desired functionality here
-    }
-
-    public void ChangeOutput(String newText) {
-        outputLabel.setText(newText);
+    private String simulateServerResponse(String action, String className) {
+        if ("Add Class".equals(action)) {
+            return "Class " + className + " added successfully.";
+        } else if ("Remove Class".equals(action)) {
+            return "Class " + className + " removed successfully.";
+        } else if ("Display Schedule".equals(action)) {
+            return "Schedule for class " + className + ":\n[Server response simulated]";
+        } else {
+            return "Invalid action.";
+        }
     }
 
     public static void main(String[] args) {
