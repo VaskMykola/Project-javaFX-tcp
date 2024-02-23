@@ -10,6 +10,21 @@ import javafx.scene.control.*;
 import javafx.scene.layout.GridPane;
 import javafx.stage.Stage;
 
+// TODO LIST:
+// TODO: Add TCP client code to send\receive data from server
+// TODO: consider design changes
+// TODO: add buttons to connect\disconnect from server
+// todo: 1+ modules in one class
+// TODO: add error handling + custom exception
+// TODO: default values for input fields \ default DB values
+// TODO: something else ?
+
+// optional TODO LIST:
+// todo: fxml or css ?
+// todo: add more features, buttons, etc
+// todo: menu bar with diff options
+// todo: host, port, etc as input fields or in menu settings + default values
+// todo: somethign else?
 public class Client extends Application {
 
     private TextArea responseArea; // For displaying server responses
