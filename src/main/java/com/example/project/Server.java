@@ -9,10 +9,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Scanner;
 
-// TODO
-// 1. multi thread exit (or patitial exit for all threads)
-// 2. add client part (sending receiving processing data)
-// 3. something else?
+// TODO LIST:
+// TODO 1. multi thread exit (or patitial exit for all threads)
+// TODO 2. add client part (sending receiving processing data)
+// TODO 3. something else?
 
 public class Server {
     boolean isRunning = true;
