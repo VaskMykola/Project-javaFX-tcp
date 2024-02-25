@@ -108,15 +108,12 @@ public class Client extends Application {
     }
 
     private String simulateServerResponse(String action, String className) {
-        if ("Add Class".equals(action)) {
-            return "Class " + className + " added successfully.";
-        } else if ("Remove Class".equals(action)) {
-            return "Class " + className + " removed successfully.";
-        } else if ("Display Schedule".equals(action)) {
-            return "Schedule for class " + className + ":\n[Server response simulated]";
-        } else {
-            return "Invalid action.";
-        }
+        return switch (action) {
+            case "Add Class" -> "Class " + className + " added successfully.";
+            case "Remove Class" -> "Class " + className + " removed successfully.";
+            case "Display Schedule" -> "Schedule for class " + className + ":\n[Server response simulated]";
+            case null, default -> "Invalid action.";
+        };
     }
 
     public static void main(String[] args) {
