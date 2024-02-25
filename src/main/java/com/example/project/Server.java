@@ -10,55 +10,22 @@ import java.util.List;
 import java.util.Scanner;
 
 // TODO LIST:
-// TODO 1. multi thread exit (or patitial exit for all threads)
-// TODO 2. add client part (sending receiving processing data)
-// TODO 3. something else?
+// TODO 1. Add TCP server code to receive\send data from client
+// TODO 2. consider design multithreading
+// TODO 3. handle all data with try catch
+// TODO 4. add custom exception
+
 
 public class Server {
+    private static final int PORT = 8080;
     boolean isRunning = true;
     private ServerSocket serverSocket;
     private final HashMap<String, HashMap<String, HashSet<ModuleSchedule>>> classSchedules = new HashMap<>();
     private final HashMap<String, Set<ModuleInfo>> moduleIndex = new HashMap<>();
 
     public static void main(String[] args) {
-        new Server().startServer();
+        MenuBuilder.displayMenu();
     }
-
-    public void startServer() {
-        try {
-            serverSocket = new ServerSocket(1234); // Initialize serverSocket without try-with-resources
-            new Thread(MenuBuilder::displayMenu).start();
-
-            while (isRunning) {
-                Socket clientSocket = serverSocket.accept();
-                new ClientHandler(clientSocket, this).start();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                if (serverSocket != null && !serverSocket.isClosed()) {
-                    serverSocket.close();
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-
-
-    }
-
-    public void stopServer() {
-        isRunning = false;
-        try {
-            if (serverSocket != null) {
-                serverSocket.close(); // This will break the server loop by throwing a SocketException
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
 
     public HashMap<String, HashMap<String, HashSet<ModuleSchedule>>> getClassSchedules() {
         return classSchedules;
@@ -176,36 +143,6 @@ public class Server {
         displayScheduleForModule(moduleName);
     }
 
-    private static class ClientHandler extends Thread {
-        private Socket clientSocket;
-        private Server server;
-
-        public ClientHandler(Socket socket, Server server) {
-            this.clientSocket = socket;
-            this.server = server;
-        }
-
-        @Override
-        public void run() {
-            try (
-                    BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                    PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-            ) {
-                String inputLine;
-                while ((inputLine = in.readLine()) != null) {
-                    // TODO PASTE CODE FOR processing client requests HERE
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                try {
-                    clientSocket.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-    }
 }
 
 class ModuleSchedule {
@@ -349,10 +286,7 @@ class MenuBuilder {
         classesMenu.display();
     }
 
-    private void showExitConfirmation() { // TODO 1
-        Menu exitMenu = new Menu("You are trying to quit the app completely. Are you sure?");
-        exitMenu.addItem(new MenuItem("Yes", server::stopServer));
-    }
+
 
 
     public static void displayMenu() {
